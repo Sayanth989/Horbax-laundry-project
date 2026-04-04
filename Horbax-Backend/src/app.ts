@@ -8,6 +8,12 @@ import router from './routes/auth.routes.js'
 import { protect } from './middleware/auth.middleware.js'
 
 
+import authRoutes     from './routes/auth.routes.js'
+import orderRoutes    from './routes/order.routes.js'
+import customerRoutes from './routes/customer.routes.js' 
+import settingsRoutes from  './routes/settings.routes.js'
+import expenseRoutes from   './routes/expense.routes.js'
+
 
 
 
@@ -24,7 +30,10 @@ app.use(cors())
 app.use(express.json())
 
 // Test route
-app.use('/api/auth',router)
+app.use('/api/auth',authRoutes);
+app.use('/api/order',orderRoutes);
+app.use('/api/customers',customerRoutes)
+app.use('/api/settings',settingsRoutes)
 
 
 // app.get("/api/test",protect,(req,res)=>{
