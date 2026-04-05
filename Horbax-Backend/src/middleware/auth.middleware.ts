@@ -31,7 +31,7 @@ export const protect = (req : Request,res:Response,next:NextFunction):void =>{
         next()
     }
     catch(error){
-        res.status(404).json({message:'Invalid token or exprise'})
+        res.status(401).json({message:'Invalid token or exprise'})
 
 
     }

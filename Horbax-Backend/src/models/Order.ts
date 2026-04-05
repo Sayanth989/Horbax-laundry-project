@@ -47,7 +47,7 @@ const orderSchema = new Schema<IOrder>(
     cashAmount:   { type: Number, default: 0 },
     status: {
       type: String,
-      enum: ['pending', 'completed'],
+      enum: ['pending','ready','completed'],
       default: 'pending',
     },
     deliveryDate: { type: String },

@@ -3,7 +3,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import connectDB from './config/db.js'// 👈 import your db file
 
-import router from './routes/auth.routes.js'
+
 
 import { protect } from './middleware/auth.middleware.js'
 
@@ -34,6 +34,7 @@ app.use('/api/auth',authRoutes);
 app.use('/api/order',orderRoutes);
 app.use('/api/customers',customerRoutes)
 app.use('/api/settings',settingsRoutes)
+app.use('/api/expenses',expenseRoutes)
 
 
 // app.get("/api/test",protect,(req,res)=>{

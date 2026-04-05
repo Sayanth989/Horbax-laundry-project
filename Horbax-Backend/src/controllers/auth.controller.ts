@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
-import Admin from '..//models/Admin.js'
+import Admin from '../models/Admin.js'
 import { AuthResponse, JwtPayload } from '../types/type.js'
 
 // Helper
@@ -51,13 +51,45 @@ export const loginAdmin = async (req: Request, res: Response): Promise<void> => 
   }
 }
 
+
+
+
+
+
 // POST /api/auth/change-password
+// export const changePassword = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     const { username, newPassword } = req.body
+//     const admin = await Admin.findOne({ username })
+//     if (!admin) {
+//       res.status(404).json({ message: 'Admin not found' })
+//       return
+//     }
+//     admin.password = newPassword
+//     await admin.save()
+//     res.json({ message: 'Password updated!' })
+//   } catch (error) {
+//     res.status(500).json({ message: 'Server error' })
+//   }
+// }   /// we 
+
+
+
+//we can do this  anit gravity
+
 export const changePassword = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { username, newPassword } = req.body
-    const admin = await Admin.findOne({ username })
+    const { currentPassword, newPassword } = req.body   // ✅ Now requires currentPassword
+    // ✅ Get admin from the JWT token (set by protect middleware)
+    const admin = await Admin.findById(req.admin?.id)
     if (!admin) {
       res.status(404).json({ message: 'Admin not found' })
+      return
+    }
+    // ✅ Verify current password before allowing change
+    const isMatch = await admin.matchPassword(currentPassword)
+    if (!isMatch) {
+      res.status(401).json({ message: 'Current password is incorrect' })
       return
     }
     admin.password = newPassword

@@ -155,3 +155,27 @@ export const collectOrder = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ message: 'Server error' })
   }
 }
+
+
+//path //api/orders/:id/ready
+//called when cloths are washed and ready for pickup
+
+
+export const markAsReady = async (req:Request,res:Response): Promise<void> =>{
+  try{
+   const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status: 'ready' },
+      { new: true }
+    )
+
+    if(!order){
+      res.status(404).json({message: 'Order not found'})
+      return
+    }
+    res.json(order)
+  }
+  catch(error){
+    res.status(500).json({message: 'server error'})
+  }
+}
