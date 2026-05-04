@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Horbax – Demo Receipt Print Test</title>
+
+  <!-- Google Fonts for the UI (not the receipt) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+  <style>
+    /* ===== SCREEN STYLES ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      color: #e2e8f0;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    .header p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+    .header .printer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      padding: 0.4rem 1rem;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 1.25rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      max-width: 420px;
+      width: 100%;
+    }
+
+    .card-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #334155;
+      background: #0f172a;
+    }
+    .card-toolbar h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+    .btn-group { display: flex; gap: 0.5rem; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-print {
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      color: #fff;
+    }
+    .btn-print:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-print:active { transform: translateY(0); }
+
+    .receipt-wrapper {
+      padding: 1.25rem;
+      display: flex;
+      justify-content: center;
+      background: #1a2332;
+    }
+
+    /* ===== RECEIPT STYLES (screen + print) ===== */
+    #thermal-bill {
+      width: 72mm;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      padding: 3mm;
+      background: #fff;
+      color: #000;
+      line-height: 1.3;
+      border-radius: 0.5rem;
+    }
+
+    .receipt-header { text-align: center; margin-bottom: 2mm; }
+    .shop-name { font-size: 16px; font-weight: bold; letter-spacing: 2px; }
+    .shop-subtitle { font-size: 9px; font-weight: bold; letter-spacing: 0.5px; }
+    .shop-address { font-size: 8px; margin-top: 1mm; }
+    .shop-phone { font-size: 8px; }
+
+    .divider { border-top: 1px solid #000; margin: 2mm 0; }
+    .divider-dashed { border-top: 1px dashed #000; margin: 3mm 0 2mm 0; }
+
+    .bill-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      margin-bottom: 1mm;
+    }
+    .bill-row .label { font-weight: bold; }
+    .bill-row .value { font-weight: bold; }
+    .bill-row .big-value { font-size: 14px; font-weight: bold; }
+
+    .customer-row { font-size: 11px; margin-bottom: 1mm; }
+    .customer-name { font-weight: bold; font-size: 12px; }
+
+    .phone-row { font-size: 10px; margin-bottom: 1mm; }
+    .phone-row span { font-weight: bold; }
+
+    .delivery-row { font-size: 10px; margin-bottom: 1mm; }
+    .delivery-row b { font-weight: bold; }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2mm;
+      margin-bottom: 0;
+    }
+    .items-table th,
+    .items-table td {
+      border: 1px solid #000;
+      padding: 1mm 2mm;
+      font-size: 11px;
+      vertical-align: top;
+    }
+    .items-table th {
+      font-size: 9px;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+    }
+    .items-table .sl { text-align: center; width: 8mm; }
+    .items-table .particulars { text-align: left; }
+    .items-table .qty { text-align: center; width: 10mm; }
+    .items-table .amount { text-align: right; width: 18mm; }
+    .items-table td { font-weight: bold; }
+    .wash-type { font-size: 9px; font-weight: normal !important; color: #444; }
+
+    .total-cell {
+      text-align: right;
+      font-weight: bold;
+      font-size: 12px;
+      padding-right: 3mm;
+    }
+    .total-value {
+      text-align: right;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .note-row { font-size: 9px; margin-top: 2mm; }
+    .note-row b { font-weight: bold; }
+
+    .status-badge {
+      text-align: center;
+      margin-top: 3mm;
+    }
+    .status-badge span {
+      display: inline-block;
+      padding: 1mm 4mm;
+      border: 1px solid #000;
+      font-weight: bold;
+      letter-spacing: 1px;
+      font-size: 10px;
+    }
+
+    .footer { text-align: center; font-size: 9px; }
+    .footer .show-bill { font-weight: bold; font-size: 10px; margin-bottom: 1mm; }
+    .footer .thanks { margin-top: 1mm; }
+
+    .instructions {
+      max-width: 420px;
+      width: 100%;
+      margin-top: 2rem;
+      padding: 1.25rem;
+      background: rgba(56, 189, 248, 0.05);
+      border: 1px solid rgba(56, 189, 248, 0.15);
+      border-radius: 1rem;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.7;
+    }
+    .instructions h4 {
+      color: #38bdf8;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    .instructions ol {
+      padding-left: 1.2rem;
+    }
+    .instructions li { margin-bottom: 0.25rem; }
+    .instructions code {
+      background: rgba(56, 189, 248, 0.1);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: #38bdf8;
+    }
+
+    /* ===== PRINT STYLES ===== */
+    @media print {
+      * { visibility: hidden !important; }
+      #thermal-bill, #thermal-bill * { visibility: visible !important; }
+      #thermal-bill {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 72mm !important;
+        margin: 0 !important;
+        padding: 2mm !important;
+        border-radius: 0 !important;
+      }
+      @page {
+        size: 80mm auto;
+        margin: 2mm;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🧾 Demo Receipt Print Test</h1>
+    <p>Test your thermal printer before deploying Horbax</p>
+    <div class="printer-badge">
+      <span class="material-symbols-outlined" style="font-size:18px">print</span>
+      TVS RP 3160 Gold · 80mm Thermal
+    </div>
+  </div>
+
+  <!-- Card -->
+  <div class="card">
+    <div class="card-toolbar">
+      <h3>Receipt Preview</h3>
+      <div class="btn-group">
+        <button class="btn btn-print" onclick="window.print()">
+          <span class="material-symbols-outlined" style="font-size:18px">print</span>
+          Print Demo Bill
+        </button>
+      </div>
+    </div>
+
+    <div class="receipt-wrapper">
+      <!-- ====== RECEIPT — 80mm thermal bill matching actual Horbax format ====== -->
+      <div id="thermal-bill">
+
+        <!-- SHOP HEADER -->
+        <div class="receipt-header">
+          <div class="shop-name">HORBAX</div>
+          <div class="shop-subtitle">LAUNDRY &amp; DRY CLEANING</div>
+          <div class="shop-address">A.N COMPLEX POYILOOR</div>
+          <div class="shop-phone">807 800 5757, 807 800 3737</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- BILL INFO -->
+        <div class="bill-row">
+          <div><span class="label">No: </span><span class="big-value">LP0001</span></div>
+          <div><span class="label">Date: </span><span class="value" id="bill-date"></span></div>
+        </div>
+
+        <!-- CUSTOMER -->
+        <div class="customer-row">
+          <span>To: </span>
+          <span class="customer-name">DEMO CUSTOMER</span>
+        </div>
+        <div class="phone-row">
+          <span>Ph: </span><span>9876543210</span>
+        </div>
+        <div class="delivery-row">
+          <span>Delivery: </span><b id="delivery-date"></b>
+        </div>
+
+        <!-- ITEMS TABLE -->
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th class="sl">Sl</th>
+              <th class="particulars">Particulars</th>
+              <th class="qty">Qty</th>
+              <th class="amount">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="sl">1</td>
+              <td class="particulars">
+                Shirt
+                <div class="wash-type">(Wash &amp; Iron)</div>
+              </td>
+              <td class="qty">3</td>
+              <td class="amount">90/-</td>
+            </tr>
+            <tr>
+              <td class="sl">2</td>
+              <td class="particulars">
+                Pant
+                <div class="wash-type">(Wash &amp; Iron)</div>
+              </td>
+              <td class="qty">2</td>
+              <td class="amount">80/-</td>
+            </tr>
+            <tr>
+              <td class="sl">3</td>
+              <td class="particulars">
+                Saree
+                <div class="wash-type">(Dry Clean)</div>
+              </td>
+              <td class="qty">1</td>
+              <td class="amount">150/-</td>
+            </tr>
+            <tr>
+              <td class="sl">4</td>
+              <td class="particulars">
+                Bed Sheet
+                <div class="wash-type">(Wash &amp; Fold)</div>
+              </td>
+              <td class="qty">2</td>
+              <td class="amount">100/-</td>
+            </tr>
+            <!-- TOTAL ROW -->
+            <tr>
+              <td colspan="3" class="total-cell">TOTAL</td>
+              <td class="total-value">420/-</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- NOTE -->
+        <div class="note-row">
+          <b>Note: </b>This is a demo test print. Your printer is working correctly!
+        </div>
+
+        <!-- STATUS -->
+        <div class="status-badge">
+          <span>IN PROGRESS</span>
+        </div>
+
+        <div class="divider-dashed"></div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+          <div class="show-bill">SHOW THIS BILL TO COLLECT</div>
+          <div>Bill No: LP0001</div>
+          <div class="thanks">Thank you for choosing Horbax!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <div class="instructions">
+    <h4>📋 How to print on your TVS RP 3160 Gold</h4>
+    <ol>
+      <li>Connect the printer via <b>USB</b> to your computer</li>
+      <li>Make sure the printer is <b>powered ON</b> and has paper loaded</li>
+      <li>Click the <b>"Print Demo Bill"</b> button above</li>
+      <li>In the browser print dialog:
+        <ul>
+          <li>Select <b>TVS RP 3160 Gold</b> as the printer</li>
+          <li>Set paper size to <code>80mm × continuous</code> (or "Receipt 80mm")</li>
+          <li>Set margins to <code>None</code> or <code>Minimum</code></li>
+          <li>Disable <b>Headers &amp; Footers</b></li>
+          <li>Uncheck <b>"Print background graphics"</b> (optional)</li>
+        </ul>
+      </li>
+      <li>Hit <b>Print</b> — your demo receipt will print! 🎉</li>
+    </ol>
+  </div>
+
+  <script>
+    // Auto-fill today's date
+    const today = new Date().toLocaleDateString('en-IN');
+    document.getElementById('bill-date').textContent = today;
+    // Delivery date = today + 3 days
+    const delivery = new Date();
+    delivery.setDate(delivery.getDate() + 3);
+    document.getElementById('delivery-date').textContent = delivery.toLocaleDateString('en-IN');
+  </script>
+</body>
+</html>

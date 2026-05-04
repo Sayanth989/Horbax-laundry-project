@@ -1,8 +1,7 @@
 import { Request, Response } from 'express'
 import Expense from '../models/expense.js'
 
-// GET /api/expenses
-// All expenses — newest first
+// GET /api/expenses — all expenses newest first
 export const getAllExpenses = async (req: Request, res: Response): Promise<void> => {
   try {
     const expenses = await Expense.find().sort({ createdAt: -1 })
@@ -25,9 +24,16 @@ export const getTodayExpenses = async (req: Request, res: Response): Promise<voi
       createdAt: { $gte: start, $lte: end }
     }).sort({ createdAt: -1 })
 
-    const total = expenses.reduce((sum, e) => sum + e.amount, 0)
+    const total      = expenses.reduce((sum, e) => sum + e.amount, 0)
+    const shopTotal  = expenses.filter(e => e.expenseType === 'shop').reduce((sum, e) => sum + e.amount, 0)
+    const ownerTotal = expenses.filter(e => e.expenseType === 'owner').reduce((sum, e) => sum + e.amount, 0)
 
-    res.json({ total, expenses })
+    const byCategory = expenses.reduce((acc: Record<string, number>, e) => {
+      acc[e.category] = (acc[e.category] || 0) + e.amount
+      return acc
+    }, {})
+
+    res.json({ total, shopTotal, ownerTotal, byCategory, expenses })
   } catch (error) {
     res.status(500).json({ message: 'Server error' })
   }
@@ -44,15 +50,46 @@ export const getMonthExpenses = async (req: Request, res: Response): Promise<voi
       createdAt: { $gte: start, $lte: end }
     }).sort({ createdAt: -1 })
 
-    const total = expenses.reduce((sum, e) => sum + e.amount, 0)
+    const total      = expenses.reduce((sum, e) => sum + e.amount, 0)
+    const shopTotal  = expenses.filter(e => e.expenseType === 'shop').reduce((sum, e) => sum + e.amount, 0)
+    const ownerTotal = expenses.filter(e => e.expenseType === 'owner').reduce((sum, e) => sum + e.amount, 0)
 
-    // Group by category
-    const byCategory = expenses.reduce((acc, e) => {
+    const byCategory = expenses.reduce((acc: Record<string, number>, e) => {
       acc[e.category] = (acc[e.category] || 0) + e.amount
       return acc
-    }, {} as Record<string, number>)
+    }, {})
 
-    res.json({ total, byCategory, expenses })
+    res.json({ total, shopTotal, ownerTotal, byCategory, expenses })
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
+// GET /api/expenses/range?from=YYYY-MM-DD&to=YYYY-MM-DD
+export const getRangeExpenses = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { from, to } = req.query
+
+    const start = new Date(from as string)
+    start.setHours(0, 0, 0, 0)
+
+    const end = new Date(to as string)
+    end.setHours(23, 59, 59, 999)
+
+    const expenses = await Expense.find({
+      createdAt: { $gte: start, $lte: end }
+    }).sort({ createdAt: -1 })
+
+    const total      = expenses.reduce((sum, e) => sum + e.amount, 0)
+    const shopTotal  = expenses.filter(e => e.expenseType === 'shop').reduce((sum, e) => sum + e.amount, 0)
+    const ownerTotal = expenses.filter(e => e.expenseType === 'owner').reduce((sum, e) => sum + e.amount, 0)
+
+    const byCategory = expenses.reduce((acc: Record<string, number>, e) => {
+      acc[e.category] = (acc[e.category] || 0) + e.amount
+      return acc
+    }, {})
+
+    res.json({ total, shopTotal, ownerTotal, byCategory, expenses })
   } catch (error) {
     res.status(500).json({ message: 'Server error' })
   }
@@ -61,14 +98,16 @@ export const getMonthExpenses = async (req: Request, res: Response): Promise<voi
 // POST /api/expenses
 export const createExpense = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { itemName, amount, category, notes } = req.body
+    const { itemName, amount, category, expenseType, notes } = req.body
 
-    if (!itemName || !amount || !category) {
-      res.status(400).json({ message: 'Item name, amount and category are required' })
+    if (!itemName || !amount || !category || !expenseType) {
+      res.status(400).json({ message: 'All fields are required' })
       return
     }
 
-    const expense = await Expense.create({ itemName, amount, category, notes })
+    const expense = await Expense.create({
+      itemName, amount, category, expenseType, notes
+    })
     res.status(201).json(expense)
   } catch (error) {
     res.status(500).json({ message: 'Server error' })

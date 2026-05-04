@@ -9,3 +9,14 @@ export interface JwtPayload {
   id: string
   username: string
 }
+
+
+export interface Expense {
+  _id:         string
+  itemName:    string
+  amount:      number
+  category:    string
+  expenseType: 'shop' | 'owner'   // 👈 add
+  notes?:      string
+  createdAt:   string
+}

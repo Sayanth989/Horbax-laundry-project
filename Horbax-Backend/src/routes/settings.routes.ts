@@ -5,7 +5,8 @@ import { getSettings,
          deleteWashType,
          updateWashType,
          addClothType,
-         deleteClothType
+         deleteClothType,
+         updateClothType
  } from "../controllers/setting.controller.js";
  import { protect } from "../middleware/auth.middleware.js";
 
@@ -21,6 +22,7 @@ import { getSettings,
 
  //cloth type routes
  router.post('/cloth',protect,addClothType);
+ router.post('/cloth/:index',protect,updateClothType)
  router.delete('/cloth/:index',protect,deleteClothType);
  
 

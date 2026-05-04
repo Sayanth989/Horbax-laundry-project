@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import Customer from '../models/coutomer.js'
+import Customer from '../models/customer.js'
 import Order from '../models/Order.js'
 
 // GET /api/customers
@@ -72,7 +72,7 @@ export const createCustomer = async (req: Request, res: Response): Promise<void>
   try {
     const { name, phone } = req.body
 
-    console.log(name,phone);
+
 
     // Check if phone already exists
     const existing = await Customer.findOne({ phone })
@@ -123,3 +123,7 @@ export const deleteCustomer = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ message: 'Server error' })
   }
 }
+
+
+// from- t0 date
+

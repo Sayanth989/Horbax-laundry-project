@@ -90,7 +90,7 @@ const Dashboard = () => {
   ]
 
   return (
-    <div className="p-6 sm:p-8 max-w-7xl mx-auto space-y-8">
+    <div className=" p-6 sm:p-6 max-w-7xl mx-auto space-y-8">
 
       {/* Page Header */}
       <section className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">

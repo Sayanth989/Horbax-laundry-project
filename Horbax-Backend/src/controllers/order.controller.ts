@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import Order from '../models/Order.js'
-import Customer from '../models/coutomer.js'
+import Customer from '../models/customer.js'
 
 
 
@@ -19,7 +19,7 @@ export const getAllOrders = async (req: Request, res: Response): Promise<void> =
 // GET /api/orders/pending
 export const getPendingOrders = async (req: Request, res: Response): Promise<void> => {
   try {
-    const orders = await Order.find({ status: 'pending' }).sort({ createdAt: -1 })
+    const orders = await Order.find({ status: { $in: ['pending', 'ready'] } }).sort({ createdAt: -1 })
     res.json(orders)
   } catch (error) {
     res.status(500).json({ message: 'Server error' })
@@ -53,8 +53,25 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
       items,
       total,
       deliveryDate,
+      deliveryType,
+      deliveryAddress,
+      deliveryCharge,
       notes,
     } = req.body
+
+    // Input validation
+    if (!customerName || !phone) {
+      res.status(400).json({ message: 'Customer name and phone are required' })
+      return
+    }
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ message: 'At least one item is required' })
+      return
+    }
+    if (!total || total <= 0) {
+      res.status(400).json({ message: 'Total must be greater than 0' })
+      return
+    }
 
     // Auto create customer if not exists
     const existingCustomer = await Customer.findOne({ phone })
@@ -68,6 +85,9 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
       items,
       total,
       deliveryDate,
+      deliveryType:    deliveryType    || 'takeaway',
+      deliveryAddress: deliveryAddress || '',
+      deliveryCharge:  deliveryCharge  || 0,
       notes,
       status :'pending',
       paymentMethod:'cash_pending' // by defult
@@ -84,7 +104,20 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
 // PATCH /api/orders/:id
 export const updateOrder = async (req: Request, res: Response): Promise<void> => {
   try {
-    const updates = req.body
+    // Whitelist allowed fields to prevent mass assignment
+    const allowedFields = [
+      'customerName', 'phone', 'items', 'total',
+      'paymentMethod', 'upiAmount', 'cashAmount',
+      'status', 'deliveryDate', 'deliveryType',
+      'deliveryAddress', 'deliveryCharge', 'notes'
+    ] as const
+
+    const updates: Record<string, unknown> = {}
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field]
+      }
+    }
 
     // If marking as completed, record the time
     if (updates.status === 'completed') {
@@ -94,7 +127,7 @@ export const updateOrder = async (req: Request, res: Response): Promise<void> =>
     const order = await Order.findByIdAndUpdate(
       req.params.id,
       updates,
-      { new: true }  // return updated document
+      { new: true }
     )
 
     if (!order) {
@@ -131,6 +164,13 @@ export const deleteOrder = async (req: Request, res: Response): Promise<void> =>
 export const collectOrder = async (req: Request, res: Response): Promise<void> => {
   try {
     const { paymentMethod, total, upiAmount, cashAmount } = req.body
+
+    // Validate paymentMethod
+    const validMethods = ['cash_paid', 'upi', 'upi_cash']
+    if (!paymentMethod || !validMethods.includes(paymentMethod)) {
+      res.status(400).json({ message: 'Invalid payment method' })
+      return
+    }
 
     const order = await Order.findByIdAndUpdate(
       req.params.id,
